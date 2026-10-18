@@ -1,0 +1,18 @@
+# 编译产物
+build/
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# 测试产物
+dist/*.json
+dist/*.png
+shot*.png
+
+# 临时文件
+*.tmp
+*.log
+Thumbs.db
+desktop.ini
