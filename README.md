@@ -4,7 +4,7 @@
 
 > An independent, single-file Windows memory optimizer that reimplements the kernel calls behind PCL2-CE's `MemSwapWorks`. No installer, no driver, no network.
 
-![界面](docs/ui.png)
+<img src="docs/ui.png" width="460" alt="界面">
 
 ## 它和 PCL 是什么关系
 
@@ -71,7 +71,7 @@ MemOptimizer.exe --memory --silent --report=D:\mem.json
 | 文件缓存 | 366 MB | 12.6 MB |
 | 总耗时 | 11.2 s | |
 
-逐项：清空工作集 1077 ms（+589 MB）→ 刷新文件缓存 2 ms（+17 MB）→ 写回已修改页 8005 ms（+582 MB）→ 清理待命列表 1202 ms（最终差值已包含它）。完整原始 JSON 见 [`docs/sample-report.json`](docs/sample-report.json)。
+逐项：清空工作集 1077 ms（+589 MB）→ 刷新文件缓存 2 ms（+17 MB）→ 写回已修改页 8005 ms（+582 MB）→ 清理待命列表 1202 ms（最终差值已包含它）。完整原始 JSON 见 [`docs/sample-report.json`](docs/sample-report.json)。<br><img src="docs/result.png" width="460" alt="结果">
 
 之所以慢，是「写回已修改页」要把脏页刷到页面文件；如果只要快，可以取消勾选它，1～3 秒即可完成。
 
@@ -118,3 +118,4 @@ MemOptimizer.exe --memory --silent --report=D:\mem.json
 ## 许可
 
 MIT。PCL2 / PCL2-CE 的源码与商标归其作者所有；本仓库只做接口层面的独立实现，未包含其代码。
+
