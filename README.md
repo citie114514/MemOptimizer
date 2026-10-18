@@ -4,6 +4,8 @@
 
 > An independent, single-file Windows memory optimizer that reimplements the kernel calls behind PCL2-CE's `MemSwapWorks`. No installer, no driver, no network.
 
+[![Build & Release](https://github.com/citie114514/MemOptimizer/actions/workflows/release.yml/badge.svg)](https://github.com/citie114514/MemOptimizer/actions/workflows/release.yml)
+
 <img src="docs/ui.png" width="460" alt="界面">
 
 ## 它和 PCL 是什么关系
@@ -18,9 +20,14 @@
 - [MemSwapWorks.cs](https://github.com/PCL-Community/PCL-CE/blob/7b5c912ffa29ef5554d069e7605d3faa99238c4a/PCL.Core/App/Tools/MemSwapWorks.cs)
 - PCL 2.6.3 更新说明（新增内存优化、`--memory` 参数）：<https://www.minebbs.com/resources/pcl-plain-craft-launcher.4256/updates>
 
+## 下载
+
+- **最新版**：<https://github.com/citie114514/MemOptimizer/releases/latest> —— 推 `v*` tag 后由 GitHub Actions 自动构建，Release 说明里附 SHA256；
+- **自己编译**：见文末「构建」，产物 `dist\MemOptimizer.exe`。
+
 ## 用法
 
-双击 `dist\MemOptimizer.exe`：
+拿到 `MemOptimizer.exe` 后双击：
 
 1. 勾选要执行的动作（默认已选 4 项）；
 2. 点「开始优化」；
@@ -95,6 +102,22 @@ MemOptimizer.exe --memory --silent --report=D:\mem.json
 ```
 
 产物 `dist\MemOptimizer.exe`（约 44 KB，AnyCPU，目标 .NET Framework 4.8，无需安装额外运行时）。
+
+脚本会自动找最新的 .NET SDK 和本机 4.8 参考程序集；找不到参考程序集时（例如干净的 CI 机器）会回退到 NuGet 官方包 `Microsoft.NETFramework.ReferenceAssemblies.net48`，所以 `-ReferenceAssemblies <路径>` 只在特殊环境下才需要。
+
+### 自动构建与发布
+
+[`.github/workflows/release.yml`](.github/workflows/release.yml)：
+
+- `push` 到 `main`、PR、手动 `workflow_dispatch` → 只构建并上传 artifact（保留 30 天）；
+- **推 `v*` tag → 构建 + 自动创建 Release 并把 `MemOptimizer.exe` 挂上去**（Release 说明含 SHA256）；tag 若已有 Release 则覆盖上传产物；
+- 失败后直接点 GitHub 上的「Re-run jobs」即可，tag 上下文会保留。
+
+发布新版本：
+
+```bash
+git tag v1.0.1 && git push origin v1.0.1
+```
 
 ### 源码结构
 

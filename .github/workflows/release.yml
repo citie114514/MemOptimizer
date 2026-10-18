@@ -1,0 +1,92 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build MemOptimizer.exe
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build
+        shell: pwsh
+        run: ./build.ps1
+
+      - name: Verify output
+        id: verify
+        shell: pwsh
+        run: |
+          $exe = Get-Item 'dist/MemOptimizer.exe'
+          if ($exe.Length -lt 20000) { throw "产物异常：只有 $($exe.Length) 字节" }
+
+          $version = $exe.VersionInfo
+          if ($version.FileVersion -ne '1.0.0.0') { throw "版本信息异常：$($version.FileVersion)" }
+
+          $hash = (Get-FileHash $exe.FullName -Algorithm SHA256).Hash.ToLower()
+          "size=$($exe.Length)" >> $env:GITHUB_OUTPUT
+          "sha256=$hash" >> $env:GITHUB_OUTPUT
+
+          @"
+          ### MemOptimizer.exe 构建成功
+
+          | 项目 | 值 |
+          | --- | --- |
+          | 大小 | $($exe.Length) 字节 |
+          | 版本 | $($version.FileVersion) |
+          | SHA256 | ``$hash`` |
+          "@ >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MemOptimizer-${{ github.ref_name }}-${{ github.sha }}
+          path: dist/MemOptimizer.exe
+          if-no-files-found: error
+          retention-days: 30
+
+      # 推 tag 时自动建 Release 并附上 exe；手动 rerun 同样有效（ref 仍是 tag）
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          $sha = '${{ steps.verify.outputs.sha256 }}'
+
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Release $tag 已存在，覆盖上传产物"
+            gh release upload $tag 'dist/MemOptimizer.exe' --clobber --repo $env:GITHUB_REPOSITORY
+            gh release edit $tag --notes "SHA256: ``$sha``" --repo $env:GITHUB_REPOSITORY
+          } else {
+            $notes = @"
+          CI 自动构建产物。
+
+          - ``MemOptimizer.exe``：单文件，AnyCPU，目标 .NET Framework 4.8（Win10/11 自带）
+          - SHA256：``$sha``
+
+          > 工作集是被换出到页面文件，并非真正释放；被整理的软件切回时可能有一两秒缺页卡顿，不适合频繁使用。
+          "@
+            gh release create $tag 'dist/MemOptimizer.exe' --title "$tag" --notes $notes --repo $env:GITHUB_REPOSITORY
+          }
